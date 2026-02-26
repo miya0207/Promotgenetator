@@ -917,6 +917,8 @@ let busy = false;
 const SESS_KEY = 'npb_session_v3';
 function saveSession() {
   try {
+    const brand = v('brand');
+    if (!brand) return; // 初期化前の保存を防止
     sessionStorage.setItem(SESS_KEY, JSON.stringify({
       brand: v('brand'), series: v('series'), note_id: v('note_id'), title: v('title'),
       audience: v('audience'), cta_next: v('cta_next'), cta_label: v('cta_label'),
@@ -930,7 +932,8 @@ function loadSession() {
   try {
     const d = JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null');
     if (!d) return;
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    // val が undefined/null/空文字の場合は HTML の初期値を保持する
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
     set('brand', d.brand); set('series', d.series); set('note_id', d.note_id);
     set('title', d.title); set('audience', d.audience);
     set('cta_next', d.cta_next); set('cta_label', d.cta_label);
