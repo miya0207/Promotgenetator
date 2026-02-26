@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ジャンル・フォーマットを問わず使える汎用ノートプロンプト生成ツール。note / Zenn / ブログ対応。無料・有料ノートの構成を自動で切り替え。">
+<title>Note Prompt Builder — Universal Edition</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>✦</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   CSS変数
+══════════════════════════════════════════════ */
+:root {
+  --bg:        #0d0d10;
+  --surface:   #16161c;
+  --surface2:  #1e1e28;
+  --surface3:  #252535;
+  --border:    #2a2a38;
+  --accent:    #7c6ef7;
+  --accent2:   #f7c06e;
+  --accent3:   #6ef7b8;
+  --text:      #e8e8f0;
+  --text2:     #8888aa;
+  --text3:     #555570;
+  --danger:    #f76e6e;
+  --success:   #6ef7b8;
+  --warn:      #f7c06e;
+  --t: .18s cubic-bezier(.2,.8,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ‘Noto Sans JP’, sans-serif;
+font-size: 14px;
+line-height: 1.6;
+min-height: 100vh;
+}
+
+/* ── ヘッダー ── */
+.header {
+background: rgba(13,13,16,.94);
+border-bottom: 1px solid var(–border);
+padding: 0 20px;
+display: flex;
+align-items: center;
+gap: 12px;
+height: 56px;
+backdrop-filter: blur(12px);
+position: sticky;
+top: 0;
+z-index: 200;
+}
+.logo {
+font-family: ‘Syne’, sans-serif;
+font-weight: 800;
+font-size: 17px;
+letter-spacing: -.5px;
+background: linear-gradient(90deg, var(–accent), var(–accent2));
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+white-space: nowrap;
+}
+.badge-ver {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 10px;
+color: var(–text3);
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 4px;
+padding: 2px 6px;
+}
+.mode-tabs {
+display: flex;
+background: var(–surface2);
+border-radius: 7px;
+padding: 3px;
+gap: 2px;
+margin-left: 6px;
+}
+.mode-tab {
+background: none;
+border: none;
+border-radius: 5px;
+color: var(–text2);
+font: 500 12px ‘Noto Sans JP’, sans-serif;
+padding: 5px 14px;
+cursor: pointer;
+transition: all var(–t);
+}
+.mode-tab.active { background: var(–accent); color: #fff; }
+.header-r { margin-left: auto; display: flex; gap: 8px; }
+.hbtn {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+color: var(–text2);
+font: 12px ‘Noto Sans JP’, sans-serif;
+padding: 6px 13px;
+cursor: pointer;
+transition: all var(–t);
+white-space: nowrap;
+}
+.hbtn:hover { border-color: var(–accent); color: var(–accent); }
+.hbtn.d:hover { border-color: var(–danger); color: var(–danger); }
+
+/* ── レイアウト ── */
+.layout {
+display: grid;
+grid-template-columns: 450px 1fr;
+height: calc(100vh - 56px);
+}
+
+/* ── 左パネル ── */
+.panel-l {
+background: var(–surface);
+border-right: 1px solid var(–border);
+display: flex;
+flex-direction: column;
+height: 100%;
+overflow: hidden;
+}
+.panel-l-scroll { flex: 1; overflow-y: auto; }
+
+.sec { padding: 16px 20px; border-bottom: 1px solid var(–border); }
+.sec:last-child { border-bottom: none; }
+.sec-t {
+font-family: ‘Syne’, sans-serif;
+font-size: 10px;
+font-weight: 700;
+letter-spacing: 2.5px;
+text-transform: uppercase;
+color: var(–accent);
+margin-bottom: 13px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.sec-t::before {
+content: ‘’;
+width: 3px; height: 12px;
+background: var(–accent);
+border-radius: 2px;
+flex-shrink: 0;
+}
+
+.f { margin-bottom: 11px; }
+.f:last-child { margin-bottom: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.f label {
+display: flex;
+align-items: center;
+gap: 5px;
+font-size: 11px;
+color: var(–text2);
+font-weight: 500;
+margin-bottom: 5px;
+}
+.f label .req { color: var(–danger); font-size: 10px; }
+.f label .tip {
+color: var(–text3);
+font-size: 10px;
+margin-left: auto;
+cursor: help;
+border-bottom: 1px dashed var(–text3);
+}
+.f input, .f select, .f textarea {
+width: 100%;
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+color: var(–text);
+font: 13px ‘Noto Sans JP’, sans-serif;
+padding: 7px 10px;
+outline: none;
+transition: border-color var(–t), box-shadow var(–t);
+}
+.f input:focus, .f select:focus, .f textarea:focus {
+border-color: var(–accent);
+box-shadow: 0 0 0 2px rgba(124,110,247,.15);
+}
+.f input.err { border-color: var(–danger); }
+.f textarea { resize: vertical; min-height: 58px; }
+.f select {
+cursor: pointer;
+background-image: url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘8’%3E%3Cpath d=‘M1 1l5 5 5-5’ stroke=’%238888aa’ stroke-width=‘1.5’ fill=‘none’ stroke-linecap=‘round’/%3E%3C/svg%3E”);
+background-repeat: no-repeat;
+background-position: right 9px center;
+padding-right: 26px;
+-webkit-appearance: none;
+}
+
+/* 文字数カウンター */
+.char-wrap { position: relative; }
+.char-cnt {
+position: absolute;
+right: 9px; top: 50%;
+transform: translateY(-50%);
+font: 10px ‘JetBrains Mono’, monospace;
+color: var(–text3);
+pointer-events: none;
+}
+.char-cnt.w { color: var(–warn); }
+.char-cnt.o { color: var(–danger); font-weight: 700; }
+
+/* フィールドエラー */
+.ferr { font-size: 11px; color: var(–danger); margin-top: 3px; display: none; }
+.ferr.on { display: block; }
+
+/* タイプグリッド */
+.type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }
+.tbtn {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+color: var(–text2);
+font: 11px ‘Noto Sans JP’, sans-serif;
+padding: 8px 5px;
+cursor: pointer;
+text-align: center;
+transition: all var(–t);
+line-height: 1.4;
+}
+.tbtn:hover { border-color: var(–accent); color: var(–text); background: var(–surface3); }
+.tbtn.on { background: rgba(124,110,247,.18); border-color: var(–accent); color: var(–accent); font-weight: 700; }
+
+/* フォーマットタグ */
+.fmt-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.fbtn {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 20px;
+color: var(–text2);
+font: 11px ‘Noto Sans JP’, sans-serif;
+padding: 4px 11px;
+cursor: pointer;
+transition: all var(–t);
+}
+.fbtn:hover { border-color: var(–accent2); color: var(–text); }
+.fbtn.on { background: rgba(247,192,110,.15); border-color: var(–accent2); color: var(–accent2); font-weight: 700; }
+
+/* タグ入力 */
+.tag-wrap {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 5px 8px;
+display: flex;
+flex-wrap: wrap;
+gap: 5px;
+min-height: 37px;
+cursor: text;
+transition: border-color var(–t), box-shadow var(–t);
+}
+.tag-wrap:focus-within { border-color: var(–accent); box-shadow: 0 0 0 2px rgba(124,110,247,.15); }
+.tag {
+background: rgba(124,110,247,.18);
+border: 1px solid rgba(124,110,247,.35);
+border-radius: 4px;
+color: var(–accent);
+font-size: 11px;
+padding: 2px 6px;
+display: flex;
+align-items: center;
+gap: 4px;
+max-width: 180px;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+animation: tin .15s ease;
+}
+@keyframes tin { from { opacity:0; transform:scale(.8); } to { opacity:1; transform:scale(1); } }
+.tag.avoid { background: rgba(247,110,110,.12); border-color: rgba(247,110,110,.3); color: var(–danger); }
+.tag.rule  { background: rgba(110,247,184,.1);  border-color: rgba(110,247,184,.3); color: var(–accent3); }
+.tag-x { cursor: pointer; opacity: .5; font-size: 13px; line-height: 1; flex-shrink: 0; }
+.tag-x:hover { opacity: 1; }
+.tag-in {
+background: none;
+border: none;
+outline: none;
+color: var(–text);
+font: 12px ‘Noto Sans JP’, sans-serif;
+min-width: 80px;
+flex: 1;
+padding: 2px 0;
+}
+.thint { font-size: 10px; color: var(–text3); margin-top: 3px; }
+
+/* ── フッター ── */
+.panel-footer {
+padding: 14px 20px;
+background: var(–surface);
+border-top: 1px solid var(–border);
+display: flex;
+gap: 8px;
+flex-shrink: 0;
+}
+.btn-gen {
+flex: 1;
+background: linear-gradient(135deg, var(–accent), #9c6ef7);
+border: none;
+border-radius: 8px;
+color: #fff;
+font: 700 14px ‘Syne’, sans-serif;
+letter-spacing: .5px;
+padding: 12px;
+cursor: pointer;
+transition: all var(–t);
+}
+.btn-gen:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,110,247,.4); }
+.btn-gen:active { transform: none; box-shadow: none; }
+.btn-gen:disabled { opacity: .45; cursor: not-allowed; }
+.btn-reset {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 8px;
+color: var(–text2);
+font: 12px ‘Noto Sans JP’, sans-serif;
+padding: 12px 15px;
+cursor: pointer;
+transition: all var(–t);
+white-space: nowrap;
+}
+.btn-reset:hover { border-color: var(–danger); color: var(–danger); }
+
+/* ── シリーズモード ── */
+.note-list { display: flex; flex-direction: column; gap: 7px; }
+.note-card {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 10px 13px;
+cursor: pointer;
+transition: all var(–t);
+}
+.note-card:hover, .note-card.active { border-color: var(–accent); background: rgba(124,110,247,.07); }
+.nc-head { display: flex; align-items: center; gap: 8px; }
+.nc-id {
+font: 11px ‘JetBrains Mono’, monospace;
+color: var(–accent);
+background: rgba(124,110,247,.15);
+border-radius: 4px;
+padding: 2px 7px;
+flex-shrink: 0;
+}
+.nc-title { font-size: 12px; font-weight: 500; color: var(–text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nc-del {
+background: none;
+border: 1px solid transparent;
+border-radius: 4px;
+color: var(–text3);
+font-size: 11px;
+padding: 2px 7px;
+cursor: pointer;
+flex-shrink: 0;
+transition: all var(–t);
+}
+.nc-del:hover { border-color: var(–danger); color: var(–danger); }
+.nc-meta { font-size: 10px; color: var(–text3); margin-top: 3px; }
+
+/* シリーズノート編集フォーム（インライン）*/
+.nc-edit {
+margin-top: 10px;
+padding-top: 10px;
+border-top: 1px solid var(–border);
+display: none;
+}
+.nc-edit.open { display: block; }
+
+.btn-add-note {
+background: none;
+border: 1px dashed var(–border);
+border-radius: 8px;
+color: var(–text2);
+font: 12px ‘Noto Sans JP’, sans-serif;
+padding: 9px;
+cursor: pointer;
+text-align: center;
+transition: all var(–t);
+width: 100%;
+margin-top: 8px;
+}
+.btn-add-note:hover { border-color: var(–accent); color: var(–accent); background: rgba(124,110,247,.05); }
+
+/* ── 右パネル ── */
+.panel-r {
+display: flex;
+flex-direction: column;
+height: 100%;
+overflow: hidden;
+}
+.prev-hd {
+background: var(–surface);
+border-bottom: 1px solid var(–border);
+padding: 9px 16px;
+display: flex;
+align-items: center;
+gap: 10px;
+flex-shrink: 0;
+}
+.ptabs { display: flex; background: var(–surface2); border-radius: 6px; padding: 2px; gap: 2px; }
+.ptab {
+background: none;
+border: none;
+border-radius: 4px;
+color: var(–text2);
+font: 11px ‘Noto Sans JP’, sans-serif;
+padding: 4px 11px;
+cursor: pointer;
+transition: all var(–t);
+}
+.ptab.active { background: var(–surface3); color: var(–text); }
+.prev-badge {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 4px;
+color: var(–text3);
+font: 10px ‘JetBrains Mono’, monospace;
+padding: 2px 6px;
+}
+.prev-actions { margin-left: auto; display: flex; gap: 7px; align-items: center; }
+.abtn {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+color: var(–text2);
+font: 12px ‘Noto Sans JP’, sans-serif;
+padding: 5px 12px;
+cursor: pointer;
+transition: all var(–t);
+display: flex;
+align-items: center;
+gap: 5px;
+white-space: nowrap;
+}
+.abtn:hover:not(:disabled) { border-color: var(–accent3); color: var(–accent3); }
+.abtn:disabled { opacity: .3; cursor: not-allowed; }
+.abtn.p { background: rgba(124,110,247,.15); border-color: var(–accent); color: var(–accent); }
+.abtn.p:hover:not(:disabled) { background: rgba(124,110,247,.25); }
+
+.prev-body { flex: 1; overflow: hidden; position: relative; }
+.pane {
+position: absolute; inset: 0;
+overflow-y: auto;
+padding: 20px 24px;
+opacity: 0;
+pointer-events: none;
+transition: opacity var(–t);
+}
+.pane.active { opacity: 1; pointer-events: auto; }
+
+.prompt-out {
+font: 12px/1.85 ‘JetBrains Mono’, monospace;
+color: var(–text);
+white-space: pre-wrap;
+word-break: break-word;
+}
+.h1  { color: var(–accent2); font-weight: 600; }
+.h2  { color: #c5b3f7; font-weight: 500; }
+.hk  { color: var(–accent); }
+.hs  { color: var(–accent3); }
+.hok { color: var(–success); }
+.hng { color: var(–danger); }
+.hw  { color: var(–warn); }
+.hn  { color: #f7a06e; }
+
+/* 履歴 */
+.hist-item {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 11px 13px;
+cursor: pointer;
+transition: all var(–t);
+margin-bottom: 7px;
+}
+.hist-item:hover { border-color: var(–accent); }
+.hist-meta { font: 10px ‘JetBrains Mono’, monospace; color: var(–text3); margin-bottom: 3px; }
+.hist-title { font-size: 13px; color: var(–text); }
+.hist-sub { font-size: 11px; color: var(–text2); margin-top: 2px; }
+
+/* 空状態 */
+.empty {
+display: flex; flex-direction: column;
+align-items: center; justify-content: center;
+height: 100%; text-align: center;
+color: var(–text2); gap: 12px;
+}
+.empty-ico { font-size: 42px; opacity: .22; }
+.empty-msg { font-size: 13px; opacity: .5; line-height: 2; }
+
+/* スクロールバー */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(–border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(–text3); }
+
+/* トースト */
+.toast {
+position: fixed; bottom: 20px; right: 20px;
+border-radius: 8px;
+font-size: 13px;
+padding: 9px 16px;
+transform: translateY(60px);
+opacity: 0;
+transition: all .28s cubic-bezier(.2,.8,.2,1);
+z-index: 999;
+pointer-events: none;
+}
+.toast.ok  { background: var(–surface2); border: 1px solid var(–accent3); color: var(–accent3); }
+.toast.err { background: var(–surface2); border: 1px solid var(–danger);  color: var(–danger); }
+.toast.on  { transform: translateY(0); opacity: 1; }
+
+/* モーダル */
+.modal-bg {
+position: fixed; inset: 0;
+background: rgba(0,0,0,.72);
+backdrop-filter: blur(5px);
+z-index: 300;
+display: flex;
+align-items: center;
+justify-content: center;
+opacity: 0;
+pointer-events: none;
+transition: opacity .2s;
+}
+.modal-bg.open { opacity: 1; pointer-events: auto; }
+.modal {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 26px 30px;
+max-width: 500px;
+width: 90%;
+max-height: 80vh;
+overflow-y: auto;
+transform: scale(.94) translateY(8px);
+transition: transform .2s;
+}
+.modal-bg.open .modal { transform: scale(1) translateY(0); }
+.modal h2 { font: 800 18px ‘Syne’, sans-serif; margin-bottom: 16px; }
+.modal h3 { font: 700 12px ‘Syne’, sans-serif; color: var(–accent); letter-spacing: 1px; text-transform: uppercase; margin: 14px 0 7px; }
+.modal p, .modal li { font-size: 13px; line-height: 1.8; color: var(–text2); }
+.modal ul, .modal ol { padding-left: 16px; }
+.modal li { margin-bottom: 3px; }
+.modal kbd { background: var(–surface2); border: 1px solid var(–border); border-radius: 4px; font: 11px ‘JetBrains Mono’, monospace; padding: 1px 5px; color: var(–text); }
+.modal-close { float: right; background: var(–surface2); border: 1px solid var(–border); border-radius: 6px; color: var(–text2); font-size: 12px; padding: 4px 11px; cursor: pointer; margin-top: -2px; }
+.modal-close:hover { color: var(–danger); border-color: var(–danger); }
+
+/* ── レスポンシブ ── */
+@media (max-width: 820px) {
+.layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; }
+.panel-l { height: auto; max-height: 65vh; }
+.panel-r { height: 55vh; }
+.row2 { grid-template-columns: 1fr; }
+.type-grid { grid-template-columns: repeat(2,1fr); }
+.header { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 8px; }
+.mode-tabs { margin-left: 0; }
+.header-r { margin-left: auto; }
+}
+</style>
+
+</head>
+<body>
+
+<!-- ヘッダー -->
+
+<header class="header" role="banner">
+  <span class="logo" aria-label="Note Prompt Builder">Note Prompt Builder</span>
+  <span class="badge-ver">v3.0</span>
+  <div class="mode-tabs" role="tablist" aria-label="モード切替">
+    <button class="mode-tab active" id="tab-s" role="tab" aria-selected="true"  aria-controls="mode-single" onclick="switchMode('single')">シングル</button>
+    <button class="mode-tab"        id="tab-r" role="tab" aria-selected="false" aria-controls="mode-series" onclick="switchMode('series')">シリーズ</button>
+  </div>
+  <div class="header-r">
+    <button class="hbtn" onclick="openGuide()" aria-label="使い方を開く">? 使い方</button>
+    <button class="hbtn d" onclick="confirmReset()" aria-label="フォームをリセット">↺ リセット</button>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ━━━ 左パネル ━━━ -->
+
+<div class="panel-l" role="main">
+  <div class="panel-l-scroll">
+
+```
+<!-- シングルモード -->
+<div id="mode-single" role="tabpanel" aria-labelledby="tab-s">
+
+  <div class="sec">
+    <div class="sec-t">基本情報</div>
+    <div class="row2">
+      <div class="f">
+        <label for="brand">ブランド名 <span class="req" aria-label="必須">*</span></label>
+        <input id="brand" type="text" placeholder="例: ServerStart" value="ServerStart"
+               aria-required="true" autocomplete="organization" oninput="clrErr('brand')">
+        <div class="ferr" id="e-brand" role="alert">ブランド名を入力してください</div>
+      </div>
+      <div class="f">
+        <label for="note_id">ノートID <span class="req" aria-label="必須">*</span></label>
+        <input id="note_id" type="text" placeholder="例: F01" value="F01"
+               aria-required="true" oninput="clrErr('note_id')">
+        <div class="ferr" id="e-note_id" role="alert">ノートIDを入力してください</div>
+      </div>
+    </div>
+    <div class="f">
+      <label for="series">シリーズタイトル <span class="req" aria-label="必須">*</span></label>
+      <input id="series" type="text" placeholder="例: NextcloudでつくるプライベートCloud"
+             aria-required="true" oninput="clrErr('series')">
+      <div class="ferr" id="e-series" role="alert">シリーズタイトルを入力してください</div>
+    </div>
+    <div class="f">
+      <label for="title">ノートタイトル <span class="req" aria-label="必須">*</span>
+        <span class="tip" title="30文字を超えると警告・35文字超で生成がブロックされます">30文字以内</span>
+      </label>
+      <div class="char-wrap">
+        <input id="title" type="text" placeholder="例: Dockerとは何か？怖くない入門" maxlength="40"
+               aria-required="true" aria-describedby="char-cnt e-title" oninput="updCharCnt(); clrErr('title')">
+        <span class="char-cnt" id="char-cnt" aria-live="polite">0/30</span>
+      </div>
+      <div class="ferr" id="e-title" role="alert">タイトルを入力してください</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-t">ジャンル &amp; タイプ</div>
+    <div class="row2">
+      <div class="f">
+        <label for="genre">ジャンル</label>
+        <select id="genre" aria-label="ジャンルを選択">
+          <option value="IT・プログラミング">IT・プログラミング</option>
+          <option value="ビジネス・マーケティング">ビジネス・マーケティング</option>
+          <option value="料理・食">料理・食</option>
+          <option value="健康・フィットネス">健康・フィットネス</option>
+          <option value="学習・自己啓発">学習・自己啓発</option>
+          <option value="趣味・クリエイティブ">趣味・クリエイティブ</option>
+          <option value="その他・カスタム">その他・カスタム</option>
+        </select>
+      </div>
+      <div class="f">
+        <label for="audience">想定読者</label>
+        <input id="audience" type="text" placeholder="例: 初心者・一人暮らし" value="初心者・興味がある人">
+      </div>
+    </div>
+    <div class="f">
+      <label>ノートタイプ</label>
+      <div class="type-grid" id="type-grid" role="radiogroup" aria-label="ノートタイプを選択">
+        <button class="tbtn on" data-val="free" role="radio" aria-checked="true">🆓 free<br><small>無料ノート</small></button>
+        <button class="tbtn" data-val="paid"    role="radio" aria-checked="false">💰 paid<br><small>有料ノート</small></button>
+        <button class="tbtn" data-val="intro"   role="radio" aria-checked="false">📖 intro<br><small>導入記事</small></button>
+        <button class="tbtn" data-val="howto"   role="radio" aria-checked="false">🔧 howto<br><small>ハウツー</small></button>
+        <button class="tbtn" data-val="concept" role="radio" aria-checked="false">💡 concept<br><small>概念解説</small></button>
+        <button class="tbtn" data-val="ref"     role="radio" aria-checked="false">📋 ref<br><small>リファレンス</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-t">出力設定</div>
+    <div class="f">
+      <label>フォーマット</label>
+      <div class="fmt-row" id="fmt-grid" role="radiogroup" aria-label="出力フォーマットを選択">
+        <button class="fbtn on" data-val="md"    role="radio" aria-checked="true">Markdown</button>
+        <button class="fbtn" data-val="note"     role="radio" aria-checked="false">note.com</button>
+        <button class="fbtn" data-val="zenn"     role="radio" aria-checked="false">Zenn</button>
+        <button class="fbtn" data-val="blog"     role="radio" aria-checked="false">ブログ</button>
+        <button class="fbtn" data-val="plain"    role="radio" aria-checked="false">プレーンテキスト</button>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="f">
+        <label for="tone">トーン</label>
+        <select id="tone">
+          <option>やさしい・安心感重視</option>
+          <option>テンポよく実践的</option>
+          <option>丁寧・詳細重視</option>
+          <option>カジュアル</option>
+        </select>
+      </div>
+      <div class="f">
+        <label for="num_h">見出し数</label>
+        <select id="num_h">
+          <option value="3〜4">3〜4個（コンパクト）</option>
+          <option value="3〜6" selected>3〜6個（標準）</option>
+          <option value="5〜8">5〜8個（詳細）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-t">コンテンツ設定</div>
+    <div class="f">
+      <label>できるようになること <span class="tip" title="Enterキーで追加。Backspaceで最後のタグを削除">Enterで追加</span></label>
+      <div class="tag-wrap" id="g-wrap" onclick="this.querySelector('.tag-in').focus()" role="group" aria-label="できるようになること">
+        <input class="tag-in" id="g-in" placeholder="例: Dockerの役割を説明できる" aria-label="項目を入力">
+      </div>
+    </div>
+    <div class="f">
+      <label>必ず含める要素 <span class="tip" title="Enterキーで追加">Enterで追加</span></label>
+      <div class="tag-wrap" id="m-wrap" onclick="this.querySelector('.tag-in').focus()" role="group" aria-label="必ず含める要素">
+        <input class="tag-in" id="m-in" placeholder="例: コンテナ=箱の例え" aria-label="項目を入力">
+      </div>
+    </div>
+    <div class="f">
+      <label>禁止・回避する要素 <span class="tip" title="赤色タグで表示されます">Enterで追加</span></label>
+      <div class="tag-wrap" id="a-wrap" onclick="this.querySelector('.tag-in').focus()" role="group" aria-label="禁止・回避する要素">
+        <input class="tag-in" id="a-in" placeholder="例: 具体的なコマンド" aria-label="項目を入力">
+      </div>
+    </div>
+    <div class="f">
+      <label>カスタムルール <span class="tip" title="任意の追加指示">任意</span></label>
+      <div class="tag-wrap" id="r-wrap" onclick="this.querySelector('.tag-in').focus()" role="group" aria-label="カスタムルール">
+        <input class="tag-in" id="r-in" placeholder="例: 失敗談を必ず1つ入れる" aria-label="項目を入力">
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-t">シリーズ導線</div>
+    <div class="row2">
+      <div class="f">
+        <label for="cta_next">次のノートID</label>
+        <input id="cta_next" type="text" placeholder="例: P01（なければ空欄）">
+      </div>
+      <div class="f">
+        <label for="cta_label">次のノートタイトル</label>
+        <input id="cta_label" type="text" placeholder="任意">
+      </div>
+    </div>
+  </div>
+
+</div><!-- /mode-single -->
+
+<!-- シリーズモード -->
+<div id="mode-series" style="display:none" role="tabpanel" aria-labelledby="tab-r">
+  <div class="sec">
+    <div class="sec-t">シリーズ共通設定</div>
+    <div class="f">
+      <label for="s-brand">ブランド名 <span class="req" aria-label="必須">*</span></label>
+      <input id="s-brand" type="text" placeholder="例: ServerStart" value="ServerStart" aria-required="true">
+    </div>
+    <div class="f">
+      <label for="s-series">シリーズタイトル <span class="req" aria-label="必須">*</span></label>
+      <input id="s-series" type="text" placeholder="例: NextcloudでつくるプライベートCloud" aria-required="true">
+    </div>
+    <div class="row2">
+      <div class="f">
+        <label for="s-genre">ジャンル</label>
+        <select id="s-genre">
+          <option value="IT・プログラミング">IT・プログラミング</option>
+          <option value="ビジネス・マーケティング">ビジネス・マーケティング</option>
+          <option value="料理・食">料理・食</option>
+          <option value="健康・フィットネス">健康・フィットネス</option>
+          <option value="学習・自己啓発">学習・自己啓発</option>
+          <option value="趣味・クリエイティブ">趣味・クリエイティブ</option>
+          <option value="その他・カスタム">その他・カスタム</option>
+        </select>
+      </div>
+      <div class="f">
+        <label for="s-fmt">デフォルトフォーマット</label>
+        <select id="s-fmt">
+          <option value="md">Markdown</option>
+          <option value="note">note.com</option>
+          <option value="zenn">Zenn</option>
+          <option value="blog">ブログ</option>
+          <option value="plain">プレーンテキスト</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">ノート一覧</div>
+    <div class="note-list" id="note-list"></div>
+    <button class="btn-add-note" onclick="addNote()" aria-label="ノートを追加">+ ノートを追加</button>
+  </div>
+</div>
+```
+
+  </div><!-- /scroll -->
+
+  <div class="panel-footer">
+    <button class="btn-reset" onclick="confirmReset()" aria-label="フォームをリセット">↺ リセット</button>
+    <button class="btn-gen" id="btn-gen" onclick="generate()" aria-label="プロンプトを生成">
+      ⚡ プロンプトを生成する
+    </button>
+  </div>
+</div><!-- /panel-l -->
+
+<!-- ━━━ 右パネル ━━━ -->
+
+<div class="panel-r" role="complementary" aria-label="プレビューパネル">
+  <div class="prev-hd">
+    <div class="ptabs" role="tablist" aria-label="プレビュータブ">
+      <button class="ptab active" id="pt-prev" role="tab" aria-selected="true"  aria-controls="pane-prev" onclick="switchPTab('prev')">プレビュー</button>
+      <button class="ptab"        id="pt-hist" role="tab" aria-selected="false" aria-controls="pane-hist" onclick="switchPTab('hist')">履歴<span id="hist-n" style="font-size:10px;opacity:.6;margin-left:3px"></span></button>
+    </div>
+    <span class="prev-badge" id="line-cnt" aria-live="polite">—</span>
+    <div class="prev-actions">
+      <button class="abtn" id="btn-dl" onclick="dlPrompt()" disabled aria-label="プロンプトをダウンロード">⬇ DL</button>
+      <button class="abtn p" id="btn-cp" onclick="cpPrompt()" disabled aria-label="プロンプトをコピー">📋 コピー</button>
+    </div>
+  </div>
+  <div class="prev-body">
+    <div class="pane active" id="pane-prev" role="tabpanel" aria-labelledby="pt-prev">
+      <div class="empty" id="empty-s">
+        <div class="empty-ico" aria-hidden="true">✦</div>
+        <div class="empty-msg">左のフォームに入力して<br>「プロンプトを生成する」を押してください<br><span style="font-size:11px;opacity:.6">Ctrl+Enter でも生成できます</span></div>
+      </div>
+      <pre class="prompt-out" id="prompt-out" style="display:none" aria-label="生成されたプロンプト" aria-live="polite"></pre>
+    </div>
+    <div class="pane" id="pane-hist" role="tabpanel" aria-labelledby="pt-hist">
+      <div id="hist-list"></div>
+    </div>
+  </div>
+</div><!-- /panel-r -->
+
+</div><!-- /layout -->
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- 使い方モーダル -->
+
+<div class="modal-bg" id="guide-bg" role="dialog" aria-modal="true" aria-labelledby="guide-title" onclick="closeGuide(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeGuide()" aria-label="ガイドを閉じる">✕ 閉じる</button>
+    <h2 id="guide-title">📖 使い方ガイド</h2>
+    <h3>基本の流れ</h3>
+    <ol>
+      <li>左フォームに情報を入力する</li>
+      <li>「プロンプトを生成する」を押す</li>
+      <li>右パネルのプロンプトをコピー or ダウンロード</li>
+      <li>Claude にペーストしてノート本文を生成</li>
+    </ol>
+    <h3>ノートタイプの使い分け</h3>
+    <ul>
+      <li><strong>free / intro / concept</strong> — コマンド・設定値なしの概念解説ノート</li>
+      <li><strong>paid / howto / ref</strong> — 実装手順・地雷マップ・復旧ルートを含む実践ノート</li>
+    </ul>
+    <h3>タグ入力の操作</h3>
+    <ul>
+      <li>テキストを入力して <kbd>Enter</kbd> → タグ追加</li>
+      <li><kbd>Backspace</kbd>（空欄時）→ 最後のタグを削除</li>
+      <li>タグの <strong>×</strong> → そのタグを削除</li>
+    </ul>
+    <h3>キーボードショートカット</h3>
+    <ul>
+      <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> — プロンプトを生成</li>
+      <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> — コピー</li>
+      <li><kbd>Escape</kbd> — このガイドを閉じる</li>
+    </ul>
+    <h3>シリーズモード</h3>
+    <p>ヘッダーの「シリーズ」タブに切り替えると複数ノートをまとめて設定できます。各ノートカードをクリックすると詳細（goals・must_include等）をインラインで編集できます。生成後は全ノートを一括ダウンロード（ZIP）できます。</p>
+    <h3>入力の永続化</h3>
+    <p>フォームの入力内容はブラウザセッション中は保持されます。ページを再読み込みしても復元されます（リセットボタンで消去）。</p>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════
+// 定数
+// ══════════════════════════════════════════════════════
+const GENRE = {
+  'IT・プログラミング':      { m:['レシピ本','地図','工具箱','設計図','ロードマップ'],       h:'コマンドや設定値は最小限にとどめ、概念の理解を優先' },
+  'ビジネス・マーケティング':{ m:['羅針盤','地図','ツールキット','戦略マップ'],               h:'専門用語には必ずビジネス文脈での言い換えを添える' },
+  '料理・食':                { m:['レシピ','食材の組み合わせ','調理道具','シェフの技'],        h:'手順は段階ごとに分け、失敗しやすいポイントを明示' },
+  '健康・フィットネス':      { m:['トレーニング計画','健康診断','ペースメーカー'],             h:'医学的な断定を避け、個人差があることを注記する' },
+  '学習・自己啓発':          { m:['学習ロードマップ','習慣の積み木','脳のトレーニング'],       h:'読者のレベルに合わせた難易度設定の基準を明示' },
+  '趣味・クリエイティブ':    { m:['作業工程','道具の選び方','練習メニュー'],                  h:'楽しさを前面に出し、完璧主義を促さない表現を使う' },
+  'その他・カスタム':        { m:['ガイドブック','手引き','入門書'],                          h:'読者の前提知識レベルを明示し、専門用語には解説を添える' },
+};
+const FMT = {
+  md:    { name:'Markdown汎用',      hd:'#',  code:'```', hr:'---' },
+  note:  { name:'note.com',          hd:'#',  code:'```', hr:'---' },
+  zenn:  { name:'Zenn',              hd:'#',  code:'```', hr:'---' },
+  blog:  { name:'ブログ/WordPress',  hd:'##', code:'```', hr:'---' },
+  plain: { name:'プレーンテキスト',  hd:'■',  code:'【',  hr:'====' },
+};
+const CL_FREE = [
+  '必須構成（タイトル〜自己チェック）がすべて含まれているか',
+  '具体的なコマンド・設定値・価格などの断定情報が含まれていないか',
+  '「詰まり対処」が原因カテゴリのみになっているか（手順は含めない）',
+  '読者を安心させる表現・比喩・言い換えが5箇所以上含まれているか',
+  '次のノートへの導線が明確に書かれているか',
+];
+const CL_PAID = [
+  '必須構成（タイトル〜自己チェック）がすべて含まれているか',
+  'チェックポイント・地雷マップ・復旧ルートが含まれているか',
+  '危険な操作に ⚠️ 注意書きが付いているか',
+  '読者を安心させる表現・比喩・言い換えが5箇所以上含まれているか',
+  '次のノートへの導線、またはシリーズ完了メッセージが書かれているか',
+];
+
+// ══════════════════════════════════════════════════════
+// 状態
+// ══════════════════════════════════════════════════════
+const S = {
+  mode: 'single',
+  note_type: 'free',
+  fmt: 'md',
+  goals: [], must: [], avoid: [], rules: [],
+  notes: [],           // シリーズ用
+  expandedNote: -1,    // 展開中のノートindex
+};
+let currentPrompt = '';
+let history = [];
+let busy = false;
+
+// ── セッション永続化 ──────────────────────────────────
+const SESS_KEY = 'npb_session_v3';
+function saveSession() {
+  try {
+    sessionStorage.setItem(SESS_KEY, JSON.stringify({
+      brand: v('brand'), series: v('series'), note_id: v('note_id'), title: v('title'),
+      audience: v('audience'), cta_next: v('cta_next'), cta_label: v('cta_label'),
+      tone: v('tone'), num_h: v('num_h'), genre: v('genre'),
+      note_type: S.note_type, fmt: S.fmt,
+      goals: S.goals, must: S.must, avoid: S.avoid, rules: S.rules,
+    }));
+  } catch(e) {}
+}
+function loadSession() {
+  try {
+    const d = JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null');
+    if (!d) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('brand', d.brand); set('series', d.series); set('note_id', d.note_id);
+    set('title', d.title); set('audience', d.audience);
+    set('cta_next', d.cta_next); set('cta_label', d.cta_label);
+    set('tone', d.tone); set('num_h', d.num_h); set('genre', d.genre);
+    if (d.note_type) selectType(d.note_type);
+    if (d.fmt)       selectFmt(d.fmt);
+    const restoreTags = (arr, stateKey, wrapId, cls) => {
+      if (!arr) return;
+      S[stateKey] = [];
+      document.getElementById(wrapId).querySelectorAll('.tag').forEach(t => t.remove());
+      arr.forEach(v => addTag(v, stateKey, document.getElementById(wrapId), cls));
+    };
+    restoreTags(d.goals, 'goals', 'g-wrap', '');
+    restoreTags(d.must,  'must',  'm-wrap', '');
+    restoreTags(d.avoid, 'avoid', 'a-wrap', 'avoid');
+    restoreTags(d.rules, 'rules', 'r-wrap', 'rule');
+    updCharCnt();
+  } catch(e) {}
+}
+
+// ── フォーム入力変更を自動保存 ─────────────────────────
+document.querySelector('.panel-l').addEventListener('input', saveSession);
+
+// ══════════════════════════════════════════════════════
+// バリデーション
+// ══════════════════════════════════════════════════════
+function validate() {
+  let ok = true;
+  [['brand','ブランド名'], ['note_id','ノートID'], ['series','シリーズタイトル'], ['title','タイトル']].forEach(([id, label]) => {
+    const el = document.getElementById(id);
+    const err = document.getElementById('e-' + id);
+    if (!el.value.trim()) {
+      el.classList.add('err'); err.classList.add('on');
+      err.textContent = `${label}を入力してください`;
+      ok = false;
+    }
+  });
+  // タイトル35文字超ブロック
+  const t = document.getElementById('title');
+  if (t.value.length > 35) {
+    t.classList.add('err');
+    const err = document.getElementById('e-title');
+    err.textContent = 'タイトルは35文字以内にしてください（現在 ' + t.value.length + '文字）';
+    err.classList.add('on');
+    ok = false;
+  }
+  if (!ok) document.querySelector('.err')?.focus();
+  return ok;
+}
+function clrErr(id) {
+  document.getElementById(id)?.classList.remove('err');
+  document.getElementById('e-' + id)?.classList.remove('on');
+}
+
+// ── 文字数カウンター ──────────────────────────────────
+function updCharCnt() {
+  const el = document.getElementById('title');
+  const c  = document.getElementById('char-cnt');
+  if (!el || !c) return;
+  const n = el.value.length;
+  c.textContent = n + '/30';
+  c.className = 'char-cnt' + (n > 35 ? ' o' : n > 28 ? ' w' : '');
+}
+
+// ══════════════════════════════════════════════════════
+// タイプ / フォーマット選択
+// ══════════════════════════════════════════════════════
+function selectType(val) {
+  S.note_type = val;
+  document.querySelectorAll('.tbtn').forEach(b => {
+    const on = b.dataset.val === val;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+function selectFmt(val) {
+  S.fmt = val;
+  document.querySelectorAll('.fbtn').forEach(b => {
+    const on = b.dataset.val === val;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+document.getElementById('type-grid').addEventListener('click', e => {
+  const b = e.target.closest('.tbtn');
+  if (b) { selectType(b.dataset.val); saveSession(); }
+});
+document.getElementById('fmt-grid').addEventListener('click', e => {
+  const b = e.target.closest('.fbtn');
+  if (b) { selectFmt(b.dataset.val); saveSession(); }
+});
+
+// ══════════════════════════════════════════════════════
+// タグ入力
+// ══════════════════════════════════════════════════════
+function setupTag(inId, wrapId, sKey, cls) {
+  const inp = document.getElementById(inId);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && inp.value.trim()) {
+      e.preventDefault();
+      addTag(inp.value.trim(), sKey, document.getElementById(wrapId), cls);
+      inp.value = '';
+      saveSession();
+    } else if (e.key === 'Backspace' && !inp.value && S[sKey].length) {
+      const last = S[sKey].pop();
+      document.querySelector(`#${wrapId} [data-v="${CSS.escape(last)}"]`)?.remove();
+      saveSession();
+    }
+  });
+}
+function addTag(text, sKey, wrap, cls) {
+  if (S[sKey].includes(text)) return;
+  S[sKey].push(text);
+  const tag = document.createElement('span');
+  tag.className = 'tag' + (cls ? ' ' + cls : '');
+  tag.dataset.v = text;
+  tag.setAttribute('aria-label', text);
+  tag.appendChild(document.createTextNode(text));
+  const x = document.createElement('span');
+  x.className = 'tag-x';
+  x.textContent = '×';
+  x.setAttribute('aria-label', text + 'を削除');
+  x.addEventListener('click', () => {
+    S[sKey] = S[sKey].filter(t => t !== text);
+    tag.remove();
+    saveSession();
+  });
+  tag.appendChild(x);
+  wrap.insertBefore(tag, wrap.querySelector('.tag-in'));
+}
+setupTag('g-in', 'g-wrap', 'goals', '');
+setupTag('m-in', 'm-wrap', 'must',  '');
+setupTag('a-in', 'a-wrap', 'avoid', 'avoid');
+setupTag('r-in', 'r-wrap', 'rules', 'rule');
+
+// ══════════════════════════════════════════════════════
+// モード切替
+// ══════════════════════════════════════════════════════
+function switchMode(m) {
+  S.mode = m;
+  document.getElementById('mode-single').style.display = m === 'single' ? '' : 'none';
+  document.getElementById('mode-series').style.display = m === 'series' ? '' : 'none';
+  document.getElementById('tab-s').classList.toggle('active', m === 'single');
+  document.getElementById('tab-s').setAttribute('aria-selected', m === 'single');
+  document.getElementById('tab-r').classList.toggle('active', m === 'series');
+  document.getElementById('tab-r').setAttribute('aria-selected', m === 'series');
+}
+
+// ══════════════════════════════════════════════════════
+// シリーズモード — インライン編集UI
+// ══════════════════════════════════════════════════════
+let noteUid = 0;
+function addNote() {
+  const uid = ++noteUid;
+  S.notes.push({
+    uid, id: 'N' + String(S.notes.length + 1).padStart(2,'0'),
+    type: 'free', title: '', goals: [], must: [], avoid: [], cta_next: '',
+  });
+  renderNotes();
+  // 最後のカードを展開して id フィールドにフォーカス
+  setTimeout(() => {
+    document.getElementById('nc-edit-' + uid)?.classList.add('open');
+    document.getElementById('nc-id-' + uid)?.focus();
+  }, 50);
+}
+function removeNote(uid) {
+  S.notes = S.notes.filter(n => n.uid !== uid);
+  renderNotes();
+}
+function toggleNote(uid) {
+  const el = document.getElementById('nc-edit-' + uid);
+  if (!el) return;
+  el.classList.toggle('open');
+}
+function getNoteData(uid) {
+  const note = S.notes.find(n => n.uid === uid);
+  if (!note) return;
+  note.id    = document.getElementById('nc-id-' + uid)?.value || note.id;
+  note.title = document.getElementById('nc-title-' + uid)?.value || '';
+  note.type  = document.getElementById('nc-type-' + uid)?.value || 'free';
+  note.cta_next = document.getElementById('nc-cta-' + uid)?.value || '';
+  // タグはリアルタイム更新済み
+}
+function renderNotes() {
+  const list = document.getElementById('note-list');
+  list.innerHTML = '';
+  if (S.notes.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">ノートがまだありません</div>';
+    return;
+  }
+  S.notes.forEach(note => {
+    const uid = note.uid;
+    const div = document.createElement('div');
+    div.className = 'note-card';
+    div.setAttribute('role', 'article');
+    div.setAttribute('aria-label', `ノート ${note.id}`);
+    // ── innerHTML は定数文字列のみ。動的値はすべてDOM APIで後設定 ──
+    div.innerHTML = `
+      <div class="nc-head">
+        <span class="nc-id" id="nc-id-disp-${uid}"></span>
+        <span class="nc-title" id="nc-title-disp-${uid}"></span>
+        <button class="nc-del" id="nc-del-${uid}" aria-label="削除">削除</button>
+        <button class="nc-del" id="nc-toggle-${uid}" aria-expanded="false" aria-label="編集">編集</button>
+      </div>
+      <div class="nc-meta" id="nc-meta-${uid}"></div>
+      <div class="nc-edit" id="nc-edit-${uid}">
+        <div class="row2" style="margin-bottom:8px">
+          <div class="f">
+            <label>ノートID<input id="nc-id-${uid}" type="text" placeholder="例: F01"></label>
+          </div>
+          <div class="f">
+            <label>タイプ
+              <select id="nc-type-${uid}" aria-label="ノートタイプ">
+                ${['free','paid','intro','howto','concept','ref'].map(t => `<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('')}
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="f">
+          <label>タイトル（30文字以内）<input id="nc-title-${uid}" type="text" placeholder="ノートのタイトル" maxlength="40"></label>
+        </div>
+        <div class="f">
+          <label>できるようになること（Enterで追加）</label>
+          <div class="tag-wrap" id="nc-g-${uid}" onclick="this.querySelector('.tag-in').focus()">
+            <input class="tag-in" placeholder="例: 〇〇を説明できる" aria-label="項目を入力">
+          </div>
+        </div>
+        <div class="f">
+          <label>必ず含める要素（Enterで追加）</label>
+          <div class="tag-wrap" id="nc-m-${uid}" onclick="this.querySelector('.tag-in').focus()">
+            <input class="tag-in" placeholder="例: 比喩・例え" aria-label="項目を入力">
+          </div>
+        </div>
+        <div class="f">
+          <label>次のノートID<input id="nc-cta-${uid}" type="text" placeholder="例: P01（なければ空欄）"></label>
+        </div>
+      </div>`;
+
+    // 動的値をDOM APIで安全に設定
+    document.getElementById('nc-id-disp-' + uid).textContent   = note.id;
+    const titleDisp = document.getElementById('nc-title-disp-' + uid);
+    if (note.title) { titleDisp.textContent = note.title; }
+    else            { const em = document.createElement('em'); em.style.opacity = '.5'; em.textContent = 'タイトル未設定'; titleDisp.appendChild(em); }
+    document.getElementById('nc-meta-' + uid).textContent      = `${note.type} → ${note.cta_next || '終端'}`;
+    document.getElementById('nc-id-' + uid).value              = note.id;
+    document.getElementById('nc-type-' + uid).value            = note.type;
+    document.getElementById('nc-title-' + uid).value           = note.title;
+    document.getElementById('nc-cta-' + uid).value             = note.cta_next;
+
+    // イベントをDOM APIで安全にバインド（onclick属性不使用）
+    document.getElementById('nc-del-' + uid).addEventListener('click', () => removeNote(uid));
+    document.getElementById('nc-toggle-' + uid).addEventListener('click', () => toggleNote(uid));
+    document.getElementById('nc-id-' + uid).addEventListener('input', function(){ syncNote(uid,'id',this.value); });
+    document.getElementById('nc-type-' + uid).addEventListener('change', function(){ syncNote(uid,'type',this.value); });
+    document.getElementById('nc-title-' + uid).addEventListener('input', function(){ syncNote(uid,'title',this.value); });
+    document.getElementById('nc-cta-' + uid).addEventListener('input', function(){ syncNote(uid,'cta_next',this.value); });
+    list.appendChild(div);
+    // タグ入力をセットアップ
+    setupNoteTag(`nc-g-${uid}`, uid, 'goals');
+    setupNoteTag(`nc-m-${uid}`, uid, 'must');
+    // 既存タグを復元
+    note.goals.forEach(t => addNoteTag(t, uid, 'goals', `nc-g-${uid}`, ''));
+    note.must.forEach(t  => addNoteTag(t, uid, 'must',  `nc-m-${uid}`, ''));
+  });
+}
+function syncNote(uid, field, val) {
+  const note = S.notes.find(n => n.uid === uid);
+  if (note) note[field] = val;
+  // カードのメタ表示を更新
+  const card = document.getElementById('nc-edit-' + uid)?.closest('.note-card');
+  if (card) {
+    const idEl = card.querySelector('.nc-id');
+    const titleEl = card.querySelector('.nc-title');
+    const metaEl  = card.querySelector('.nc-meta');
+    if (idEl && field === 'id') idEl.textContent = val || note.id;
+    if (titleEl && field === 'title') titleEl.innerHTML = val ? escHtml(val) : '<em style="opacity:.5">タイトル未設定</em>';
+    if (metaEl) metaEl.textContent = `${note.type} → ${note.cta_next || '終端'}`;
+  }
+}
+function setupNoteTag(wrapId, uid, field) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const inp = wrap.querySelector('.tag-in');
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && inp.value.trim()) {
+      e.preventDefault();
+      addNoteTag(inp.value.trim(), uid, field, wrapId, '');
+      inp.value = '';
+    } else if (e.key === 'Backspace' && !inp.value) {
+      const note = S.notes.find(n => n.uid === uid);
+      if (note && note[field].length) {
+        const last = note[field].pop();
+        wrap.querySelector(`[data-v="${CSS.escape(last)}"]`)?.remove();
+      }
+    }
+  });
+}
+function addNoteTag(text, uid, field, wrapId, cls) {
+  const note = S.notes.find(n => n.uid === uid);
+  if (!note || note[field].includes(text)) return;
+  note[field].push(text);
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const tag = document.createElement('span');
+  tag.className = 'tag' + (cls ? ' ' + cls : '');
+  tag.dataset.v = text;
+  tag.appendChild(document.createTextNode(text));
+  const x = document.createElement('span');
+  x.className = 'tag-x'; x.textContent = '×';
+  x.addEventListener('click', () => {
+    note[field] = note[field].filter(t => t !== text);
+    tag.remove();
+  });
+  tag.appendChild(x);
+  wrap.insertBefore(tag, wrap.querySelector('.tag-in'));
+}
+
+// ══════════════════════════════════════════════════════
+// プロンプト生成エンジン
+// ══════════════════════════════════════════════════════
+function buildPrompt(cfg) {
+  const fmt = FMT[cfg.fmt] || FMT.md;
+  const gm  = GENRE[cfg.genre] || GENRE['その他・カスタム'];
+  const isFree = ['free','intro','concept'].includes(cfg.note_type);
+  const cl  = isFree ? CL_FREE : CL_PAID;
+  const now = new Date().toLocaleString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+  const spec = {
+    id: cfg.note_id, type: cfg.note_type, brand: cfg.brand,
+    series: cfg.series, genre: cfg.genre, title: cfg.title,
+    audience: cfg.audience, goals: cfg.goals, must_include: cfg.must,
+    must_avoid: cfg.avoid, output_format: cfg.fmt,
+    cta_next: cfg.cta_next, cta_label: cfg.cta_label,
+  };
+
+  const L = [];
+  const p = (...a) => L.push(a.join(''));
+  p('='.repeat(60));
+  p('  Note Prompt Builder  —  Universal Edition v3.0');
+  p('  生成日時: ', now);
+  p('='.repeat(60)); p('');
+  p('# 指示');
+  p('あなたは「', cfg.brand, '」ブランドの教材ライターです。');
+  p('以下の「ノート仕様」と「執筆ルール」に従い、');
+  p('**', cfg.fmt.toUpperCase(), ' / ', fmt.name, ' 向け**の本文を出力してください。');
+  p('');
+  p('# 執筆ルール（必須・全タイプ共通）'); p('');
+  p('## 出力形式');
+  p('- 出力フォーマット: **', fmt.name, '**');
+  p('- 見出し記号: `', fmt.hd, '`');
+  p('- コードブロック: `', fmt.code, '`');
+  p('- 区切り線: `', fmt.hr, '`'); p('');
+  p('## 文章トーン');
+  p('- トーン: **', cfg.tone, '**');
+  p('- 専門用語は初出時に必ず言い換え・例え・補足を入れる');
+  p('- ジャンル固有のヒント: ', gm.h);
+  p('- 比喩・例えの参考: ', gm.m.join(' / '), ' などを活用する'); p('');
+  p('## 必須構成（順序を守ること）');
+  ['タイトル（30文字以内）','このノートでできるようになること（箇条書き 3〜5個）','想定読者 / 前提知識',
+   '全体像（ASCII図またはテキスト図）',`本編（見出し ${cfg.num_h} 個、各見出し 3〜5文）`,
+   'チェックポイント（成功条件・確認方法）','よくある詰まりと対処','用語集（5〜15語）',
+   '次のノートへの導線','自己チェック結果（Yes/No テーブル）'].forEach((s,i) => p(i+1, '. ', s));
+  p('');
+  if (isFree) {
+    p('## type=free / intro / concept 専用ルール');
+    p('- ❌ 具体的なコマンド・設定値・価格・ポート番号などは書かない');
+    p('- ❌ 外部公開手順・セキュリティ設定の詳細は書かない');
+    p('- ✅ 「何が起きるか」「なぜ必要か」「どこで詰まりやすいか（原因カテゴリのみ）」を書く');
+    p('- ✅ 有料ノートで何をやるかを「見出しレベル」で予告してよい');
+  } else {
+    p('## type=paid / howto / ref 専用ルール');
+    p('- ✅ コマンドは最小限・コピペ可能な形で提供する');
+    p('- ✅ 具体的な推奨設定値（複数案）を提示してよい');
+    p('- ✅ **地雷マップ**（詰まりパターン一覧表）を必ず入れる');
+    p('- ✅ **復旧ルート**（やり直し手順）を必ず入れる');
+    p('- ⚠️ 危険操作（削除・上書き・権限変更など）には必ず注意書きを添える');
+  }
+  p('');
+  if (cfg.rules && cfg.rules.length) {
+    p('## 追加カスタムルール');
+    cfg.rules.forEach(r => p('- ', r)); p('');
+  }
+  p('# ノート仕様（JSON）');
+  p('```json'); p(JSON.stringify(spec, null, 2)); p('```'); p('');
+  p('# 【必須】自己検証チェックリスト');
+  p('出力の末尾に以下のテーブルを付けてください。');
+  p('**No が1つでもあれば本文を修正してから最終出力してください。**'); p('');
+  p('| # | チェック項目 | 結果 |');
+  p('|---|------------|------|');
+  cl.forEach((item, i) => p('| ', i+1, ' | ', item, ' | Yes / No |'));
+  p('');
+  p('> ⚠️ No が残っている場合は該当箇所を修正し、修正済みの完全な本文を出力してください。');
+
+  return L.join('\n');
+}
+
+// ══════════════════════════════════════════════════════
+// 生成
+// ══════════════════════════════════════════════════════
+async function generate() {
+  if (busy) return;
+
+  if (S.mode === 'single') {
+    if (!validate()) { toast('⚠️ 必須項目を入力してください', 'err'); return; }
+    busy = true;
+    const btn = document.getElementById('btn-gen');
+    btn.disabled = true; btn.textContent = '生成中...';
+    await new Promise(r => setTimeout(r, 150));
+
+    const cfg = {
+      brand:    v('brand'),    series: v('series'), note_id: v('note_id'),
+      title:    v('title'),    genre:  v('genre'),  audience: v('audience'),
+      note_type: S.note_type,  fmt:    S.fmt,
+      tone:     v('tone'),     num_h:  v('num_h'),
+      goals:    [...S.goals],  must:   [...S.must],
+      avoid:    [...S.avoid],  rules:  [...S.rules],
+      cta_next: v('cta_next'), cta_label: v('cta_label'),
+    };
+    currentPrompt = buildPrompt(cfg);
+    renderPreview(currentPrompt);
+    addHistory({ title: cfg.title, id: cfg.note_id, type: cfg.note_type, prompt: currentPrompt });
+    btn.disabled = false; btn.textContent = '⚡ プロンプトを生成する';
+    busy = false;
+    document.getElementById('btn-cp').disabled = false;
+    document.getElementById('btn-dl').disabled = false;
+    toast('✓ プロンプトを生成しました', 'ok');
+    switchPTab('prev');
+
+  } else {
+    const brand  = v('s-brand'); const series = v('s-series');
+    if (!brand || !series) { toast('⚠️ ブランド名とシリーズタイトルを入力してください', 'err'); return; }
+    if (S.notes.length === 0) { toast('⚠️ ノートを1本以上追加してください', 'err'); return; }
+
+    busy = true;
+    const btn = document.getElementById('btn-gen');
+    btn.disabled = true; btn.textContent = '生成中...';
+    await new Promise(r => setTimeout(r, 150));
+
+    const genre = v('s-genre'); const fmt = v('s-fmt');
+    const parts = S.notes.map(note => ({
+      filename: `${note.id}_${note.type}_${(note.title||'untitled').slice(0,20)}`,
+      content: buildPrompt({
+        brand, series, note_id: note.id, title: note.title || '（タイトル未設定）',
+        genre, audience: '初心者・興味がある人', note_type: note.type,
+        fmt, tone: 'やさしい・安心感重視', num_h: '3〜6',
+        goals: note.goals, must: note.must, avoid: note.avoid || [],
+        rules: [], cta_next: note.cta_next, cta_label: '',
+      }),
+    }));
+
+    currentPrompt = parts.map(p => `${'='.repeat(60)}\n# ${p.filename}\n${'='.repeat(60)}\n\n${p.content}`).join('\n\n');
+    renderPreview(currentPrompt);
+    addHistory({ title: `[シリーズ] ${series}`, id: 'SERIES', type: 'batch', prompt: currentPrompt });
+    btn.disabled = false; btn.textContent = '⚡ プロンプトを生成する';
+    busy = false;
+    document.getElementById('btn-cp').disabled = false;
+    document.getElementById('btn-dl').disabled = false;
+    toast(`✓ ${parts.length}本のプロンプトを生成しました`, 'ok');
+    switchPTab('prev');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// プレビュー（シンタックスハイライト）
+// ══════════════════════════════════════════════════════
+function renderPreview(text) {
+  const el = document.getElementById('prompt-out');
+  const em = document.getElementById('empty-s');
+  em.style.display = 'none'; el.style.display = '';
+
+  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  el.innerHTML = esc
+    .replace(/^(# .+)$/gm,  '<span class="h1">$1</span>')
+    .replace(/^(## .+)$/gm, '<span class="h2">$1</span>')
+    .replace(/(`[^`\n]+`)/g, '<span class="hk">$1</span>')
+    .replace(/(✅.+)/g,      '<span class="hok">$1</span>')
+    .replace(/(❌.+)/g,      '<span class="hng">$1</span>')
+    .replace(/(⚠️.+)/g,     '<span class="hw">$1</span>')
+    .replace(/("(?:[^"\\]|\\.)*")/g,'<span class="hs">$1</span>')
+    .replace(/\b(\d+)\b/g,  '<span class="hn">$1</span>');
+
+  document.getElementById('line-cnt').textContent = text.split('\n').length + ' lines';
+}
+
+// ══════════════════════════════════════════════════════
+// コピー / DL
+// ══════════════════════════════════════════════════════
+function cpPrompt() {
+  if (!currentPrompt) return;
+  navigator.clipboard.writeText(currentPrompt).then(() => {
+    const b = document.getElementById('btn-cp');
+    const o = b.innerHTML;
+    b.textContent = '✓ コピー済み';
+    toast('✓ クリップボードにコピーしました', 'ok');
+    setTimeout(() => { b.innerHTML = o; }, 2000);
+  }).catch(() => toast('コピーに失敗しました', 'err'));
+}
+
+function dlPrompt() {
+  if (!currentPrompt) return;
+  const name = (v('note_id') || 'prompt') + '_' + (v('title') || 'prompt').slice(0,18).replace(/[\\/:*?"<>|]/g,'_');
+  const blob = new Blob([currentPrompt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('⬇ ダウンロードしました', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// 履歴
+// ══════════════════════════════════════════════════════
+function addHistory(item) {
+  history.unshift({ ...item, ts: new Date().toLocaleTimeString('ja-JP') });
+  if (history.length > 20) history.pop();
+  renderHistory();
+}
+function renderHistory() {
+  const list = document.getElementById('hist-list');
+  const cnt  = document.getElementById('hist-n');
+  cnt.textContent = history.length ? `(${history.length})` : '';
+  if (!history.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-ico">🕐</div><div class="empty-msg">まだ履歴がありません</div></div>';
+    return;
+  }
+  list.innerHTML = '';
+  history.forEach(h => {
+    const d = document.createElement('div');
+    d.className = 'hist-item';
+    d.setAttribute('tabindex', '0');
+    d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', `履歴: ${h.title}`);
+    d.innerHTML = `<div class="hist-meta">${escHtml(h.ts)} · ${escHtml(h.id)} · ${escHtml(h.type)}</div>
+      <div class="hist-title">${escHtml(h.title)}</div>
+      <div class="hist-sub">${escHtml(String(h.prompt.split('\n').length))} lines</div>`;
+    const restore = () => {
+      currentPrompt = h.prompt;
+      renderPreview(h.prompt);
+      document.getElementById('btn-cp').disabled = false;
+      document.getElementById('btn-dl').disabled = false;
+      switchPTab('prev');
+      toast('履歴から復元しました', 'ok');
+    };
+    d.addEventListener('click', restore);
+    d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') restore(); });
+    list.appendChild(d);
+  });
+}
+
+function switchPTab(t) {
+  ['prev','hist'].forEach(id => {
+    const pane = document.getElementById('pane-' + id);
+    const tab  = document.getElementById('pt-' + id);
+    const on   = id === t;
+    pane.classList.toggle('active', on);
+    tab.classList.toggle('active', on);
+    tab.setAttribute('aria-selected', on);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// リセット
+// ══════════════════════════════════════════════════════
+function confirmReset() {
+  if (!confirm('入力内容をすべてリセットしますか？')) return;
+  [['brand','ServerStart'],['note_id','F01'],['series',''],['title',''],
+   ['audience','初心者・興味がある人'],['cta_next',''],['cta_label','']].forEach(([id,def]) => {
+    const el = document.getElementById(id); if (el) el.value = def;
+  });
+  [['goals','g-wrap'],['must','m-wrap'],['avoid','a-wrap'],['rules','r-wrap']].forEach(([key,wid]) => {
+    S[key] = [];
+    document.getElementById(wid)?.querySelectorAll('.tag').forEach(t => t.remove());
+  });
+  selectType('free'); selectFmt('md');
+  currentPrompt = '';
+  document.getElementById('prompt-out').style.display = 'none';
+  document.getElementById('empty-s').style.display = '';
+  document.getElementById('line-cnt').textContent = '—';
+  document.getElementById('btn-cp').disabled = true;
+  document.getElementById('btn-dl').disabled = true;
+  try { sessionStorage.removeItem(SESS_KEY); } catch(e) {}
+  updCharCnt();
+  toast('↺ リセットしました', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// ガイドモーダル
+// ══════════════════════════════════════════════════════
+function openGuide()  { document.getElementById('guide-bg').classList.add('open'); }
+function closeGuide(e) {
+  if (!e || e.target === document.getElementById('guide-bg')) {
+    document.getElementById('guide-bg').classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// トースト
+// ══════════════════════════════════════════════════════
+let toastTmr;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} on`;
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => el.classList.remove('on'), 2400);
+}
+
+// ══════════════════════════════════════════════════════
+// キーボードショートカット
+// ══════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key === 'Enter')                      { e.preventDefault(); generate(); }
+  if (mod && e.shiftKey && e.key.toUpperCase() === 'C') { e.preventDefault(); cpPrompt(); }
+  if (e.key === 'Escape')                            { closeGuide(); }
+});
+
+// ══════════════════════════════════════════════════════
+// ユーティリティ
+// ══════════════════════════════════════════════════════
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════
+// 初期化
+// ══════════════════════════════════════════════════════
+updCharCnt();
+loadSession();
+renderHistory();
+</script>
+
+</body>
+</html>
